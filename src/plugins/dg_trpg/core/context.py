@@ -6,7 +6,7 @@ from nonebot import get_plugin_config
 
 from ..config import Config
 from .auth import resolve_user
-from .errors import GameNotConfigured, LocationNotBound, NoActiveSession, RegionNotBound
+from .errors import GameNotConfigured, LocationNotBound, NeedRegistration, NoActiveSession, RegionNotBound
 from .state import get_state
 
 # Characters in TRPG never have purely numeric names, so this threshold
@@ -90,7 +90,10 @@ async def resolve_player_target(args: Message, sub_args: str) -> str | None:
     # 1. @mention
     mentioned = get_mentioned_qq_uid(args)
     if mentioned:
-        return await resolve_user(mentioned)
+        try:
+            return await resolve_user(mentioned)
+        except NeedRegistration as e:
+            raise NeedRegistration(e.qq_uid, is_target=True) from e
 
     target = sub_args.strip()
     if not target:
@@ -98,7 +101,10 @@ async def resolve_player_target(args: Message, sub_args: str) -> str | None:
 
     # 2. Bare QQ number
     if target.isdigit() and len(target) >= _QQ_UID_MIN_DIGITS:
-        return await resolve_user(target)
+        try:
+            return await resolve_user(target)
+        except NeedRegistration as e:
+            raise NeedRegistration(e.qq_uid, is_target=True) from e
 
     # 3. Character name / other identifier — pass through for API resolution
     return target

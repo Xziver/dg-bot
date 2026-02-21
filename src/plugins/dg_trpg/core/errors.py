@@ -13,8 +13,9 @@ class DgCoreError(Exception):
 class NeedRegistration(Exception):
     """Player has no dg-core account."""
 
-    def __init__(self, qq_uid: str) -> None:
+    def __init__(self, qq_uid: str, *, is_target: bool = False) -> None:
         self.qq_uid = qq_uid
+        self.is_target = is_target
         super().__init__(f"QQ user {qq_uid} not registered")
 
 
@@ -78,6 +79,8 @@ def format_api_error(e: DgCoreError) -> str:
 
 def format_context_error(e: Exception) -> str | None:
     if isinstance(e, NeedRegistration):
+        if e.is_target:
+            return f"目标玩家 (QQ: {e.qq_uid}) 尚未注册"
         return "你尚未注册，请先使用 /register <用户名> <密码>"
     if isinstance(e, RegionNotBound):
         return "本群尚未绑定区域，请DM使用 /region bind <区域代码>"
