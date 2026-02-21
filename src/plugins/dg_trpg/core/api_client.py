@@ -95,7 +95,7 @@ class DgCoreClient:
     ) -> dict[str, Any]:
         return await self._request(
             "PUT",
-            f"/api/games/{game_id}/active-character",
+            f"/api/games/{game_id}/characters/active",
             json={"patient_id": patient_id},
             params={"user_id": user_id},
         )
