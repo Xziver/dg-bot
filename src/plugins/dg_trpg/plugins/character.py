@@ -11,6 +11,7 @@ from ..core.context import (
     get_game_id,
     get_mentioned_qq_uid,
     get_plain_args,
+    resolve_patient_id,
     resolve_player_target,
 )
 from ..core.errors import DgCoreError, format_api_error, format_context_error
@@ -101,8 +102,10 @@ async def _switch(
     user_id = await get_dg_user_id(event)
     target = sub_args.strip()
 
+    patient_id = await resolve_patient_id(game_id, user_id, target)
+
     client = get_client()
-    data = await client.switch_character(game_id, user_id, target)
+    data = await client.switch_character(game_id, user_id, patient_id)
     name = data.get("name", data.get("patient_name", target))
     await matcher.finish(f"角色切换成功！当前角色: {name}")
 
@@ -152,8 +155,10 @@ async def _delete(
     user_id = await get_dg_user_id(event)
     target = sub_args.strip()
 
+    patient_id = await resolve_patient_id(game_id, user_id, target)
+
     client = get_client()
-    await client.delete_character(game_id, target, user_id)
+    await client.delete_character(game_id, patient_id, user_id)
     await matcher.finish(f"角色 {target} 已删除。")
 
 

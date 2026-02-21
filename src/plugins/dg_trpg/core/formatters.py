@@ -60,7 +60,7 @@ def format_character_list(data: list[dict[str, Any]]) -> str:
     lines = ["【角色列表】"]
     for i, ch in enumerate(data, 1):
         name = ch.get("name", "未知")
-        ch_id = ch.get("id", "?")
+        ch_id = ch.get("patient_id", ch.get("id", "?"))
         ch_type = ch.get("type", "")
         color = ch.get("soul_color", "")
         type_label = f"[{ch_type}]" if ch_type else ""

@@ -108,3 +108,23 @@ async def resolve_player_target(args: Message, sub_args: str) -> str | None:
 
     # 3. Character name / other identifier — pass through for API resolution
     return target
+
+
+async def resolve_patient_id(game_id: str, user_id: str, target: str) -> str:
+    """Resolve a character name or ID to its patient_id.
+
+    Tries matching by patient_id/id first, then by name.
+    Returns *target* unchanged if no match is found.
+    """
+    from .api_client import get_client
+
+    client = get_client()
+    characters = await client.list_characters(game_id, user_id)
+    for ch in characters:
+        pid = ch.get("patient_id", ch.get("id", ""))
+        if pid and pid == target:
+            return pid
+    for ch in characters:
+        if ch.get("name") == target:
+            return ch.get("patient_id", ch.get("id", target))
+    return target
