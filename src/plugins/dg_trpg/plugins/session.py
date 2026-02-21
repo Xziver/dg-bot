@@ -205,6 +205,7 @@ async def _add(
     matcher: Matcher, event: GroupMessageEvent, args: Message, sub_args: str
 ) -> None:
     require_group_admin_or_superuser(event)
+    game_id = get_game_id()
     session_id = get_session_id(event)
     user_id = await get_dg_user_id(event)
 
@@ -213,8 +214,16 @@ async def _add(
         await matcher.finish("用法: /session add <@玩家|QQ号|角色名>")
         return
 
+    # Resolve target's active patient_id (v2 API requires patient_id, not user_id)
     client = get_client()
-    await client.add_session_player(session_id, target_user_id, user_id=user_id)
+    char_data = await client.get_active_character(game_id, target_user_id)
+    patient = char_data.get("patient") or char_data.get("active_patient") or {}
+    patient_id = patient.get("patient_id", patient.get("id", ""))
+    if not patient_id:
+        await matcher.finish("目标玩家没有活跃的患者角色，无法加入场次。")
+        return
+
+    await client.add_session_player(session_id, patient_id, user_id=user_id)
     await matcher.finish("玩家已添加到当前场次。")
 
 
@@ -222,6 +231,7 @@ async def _remove(
     matcher: Matcher, event: GroupMessageEvent, args: Message, sub_args: str
 ) -> None:
     require_group_admin_or_superuser(event)
+    game_id = get_game_id()
     session_id = get_session_id(event)
     user_id = await get_dg_user_id(event)
 
@@ -230,6 +240,14 @@ async def _remove(
         await matcher.finish("用法: /session remove <@玩家|QQ号|角色名>")
         return
 
+    # Resolve target's active patient_id (v2 API requires patient_id in path)
     client = get_client()
-    await client.remove_session_player(session_id, target_user_id, user_id=user_id)
+    char_data = await client.get_active_character(game_id, target_user_id)
+    patient = char_data.get("patient") or char_data.get("active_patient") or {}
+    patient_id = patient.get("patient_id", patient.get("id", ""))
+    if not patient_id:
+        await matcher.finish("目标玩家没有活跃的患者角色。")
+        return
+
+    await client.remove_session_player(session_id, patient_id, user_id=user_id)
     await matcher.finish("玩家已从当前场次移除。")

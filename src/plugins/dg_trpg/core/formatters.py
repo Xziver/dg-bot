@@ -17,9 +17,9 @@ def format_character(data: dict[str, Any]) -> str:
     if ghost:
         name = ghost.get("name", "未知")
         hp = ghost.get("hp", 0)
-        max_hp = ghost.get("max_hp", hp)
+        max_hp = ghost.get("hp_max", ghost.get("max_hp", hp))
         mp = ghost.get("mp", 0)
-        max_mp = ghost.get("max_mp", mp)
+        max_mp = ghost.get("mp_max", ghost.get("max_mp", mp))
         lines.append(f"幽灵: {name} | HP: {hp}/{max_hp} | MP: {mp}/{max_mp}")
 
         cmyk = ghost.get("cmyk", {})
@@ -30,7 +30,7 @@ def format_character(data: dict[str, Any]) -> str:
             k = cmyk.get("K", 0)
             lines.append(f"CMYK: C{c} M{m} Y{y} K{k}")
 
-        abilities = ghost.get("abilities", [])
+        abilities = ghost.get("print_abilities", ghost.get("abilities", []))
         if abilities:
             ability_strs = [
                 f"{a.get('name', '?')}({a.get('color', '?')})" for a in abilities

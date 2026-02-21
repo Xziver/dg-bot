@@ -107,7 +107,7 @@ async def _locations(matcher: Matcher, event: GroupMessageEvent, sub_args: str) 
             return
         region_id = region["region_id"]
 
-    data = await client.list_locations(region_id)
+    data = await client.list_locations(game_id, region_id)
     await matcher.finish(format_location_list(data))
 
 

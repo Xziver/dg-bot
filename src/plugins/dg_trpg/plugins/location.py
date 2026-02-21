@@ -85,7 +85,7 @@ async def _add(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> Non
     if not region_id:
         await matcher.finish(f"未找到区域 '{region_name}'。请先创建区域。")
 
-    await client.create_location(region_id, loc_name, description=description, user_id=user_id)
+    await client.create_location(game_id, region_id, loc_name, description=description, user_id=user_id)
     await matcher.finish(f"地点创建成功！{loc_name}")
 
 
@@ -98,6 +98,7 @@ async def _delete(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
 
 
 async def _list(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> None:
+    game_id = get_game_id()
     group_id = get_group_id(event)
     state = get_state()
 
@@ -113,11 +114,12 @@ async def _list(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> No
         region_id = region["region_id"]
 
     client = get_client()
-    data = await client.list_locations(region_id)
+    data = await client.list_locations(game_id, region_id)
     await matcher.finish(format_location_list(data))
 
 
 async def _players(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> None:
+    game_id = get_game_id()
     if sub_args.strip():
         location_name = sub_args.strip()
         # Need to find location ID by name
@@ -129,7 +131,7 @@ async def _players(matcher: Matcher, event: GroupMessageEvent, sub_args: str) ->
             return
 
         client = get_client()
-        locations = await client.list_locations(region["region_id"])
+        locations = await client.list_locations(game_id, region["region_id"])
         location_id = None
         for loc in locations:
             if loc.get("name") == location_name or loc.get("id") == location_name:
@@ -149,7 +151,7 @@ async def _players(matcher: Matcher, event: GroupMessageEvent, sub_args: str) ->
         location_id = location["location_id"]
 
     client = get_client()
-    data = await client.get_location_players(location_id)
+    data = await client.get_location_players(game_id, location_id)
     await matcher.finish(format_location_players(data))
 
 
@@ -158,6 +160,7 @@ async def _bind(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> No
         await matcher.finish("用法: /location bind <地点名称>\n例: /location bind 酒馆")
 
     loc_name = sub_args.strip()
+    game_id = get_game_id()
     group_id = get_group_id(event)
 
     # Find location in bound region
@@ -168,7 +171,7 @@ async def _bind(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> No
         return
 
     client = get_client()
-    locations = await client.list_locations(region["region_id"])
+    locations = await client.list_locations(game_id, region["region_id"])
     target = None
     for loc in locations:
         if loc.get("name") == loc_name or loc.get("id") == loc_name:

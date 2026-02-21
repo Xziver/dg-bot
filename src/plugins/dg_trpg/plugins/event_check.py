@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from typing import Any
+
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
 from ..core.api_client import get_client
-from ..core.context import get_dg_user_id, get_game_id, get_plain_args, get_session_id
+from ..core.context import get_dg_user_id, get_game_id, get_group_id, get_plain_args, get_session_id
 from ..core.errors import DgCoreError, format_api_error, format_context_error
 from ..core.formatters import format_engine_result, format_event_check, format_event_list
+from ..core.state import get_state
 
 # ── /event ─────────────────────────────────────────────────
 
@@ -99,6 +102,11 @@ async def _check(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> N
     client = get_client()
     data = await client.submit_event(game_id, session_id, user_id, payload)
 
+    # Cache event_name for subsequent /re and /hre commands
+    if data.get("success"):
+        group_id = get_group_id(event)
+        get_state().set_last_event_check(group_id, user_id, event_name)
+
     # Format specifically for event check results
     if data.get("success") and data.get("data"):
         check_data = data["data"]
@@ -121,6 +129,7 @@ async def _delete(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
         await matcher.finish("用法: /event delete <事件名称>")
 
     event_name = sub_args.strip()
+    game_id = get_game_id()
     session_id = get_session_id(event)
     user_id = await get_dg_user_id(event)
 
@@ -136,8 +145,28 @@ async def _delete(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
     if not event_id:
         await matcher.finish(f"未找到名为 '{event_name}' 的事件。")
 
-    await client.delete_event(session_id, event_id, user_id=user_id)
+    await client.delete_event(session_id, event_id, game_id=game_id, user_id=user_id)
     await matcher.finish(f"事件 '{event_name}' 已删除。")
+
+
+# ── Helper: resolve ability name → ability_id ────────────
+
+async def _resolve_ability_id(
+    client: Any, game_id: str, user_id: str, ability_name: str
+) -> str:
+    """Resolve an ability name to its UUID by looking up the player's ghost abilities."""
+    char_data = await client.get_active_character(game_id, user_id)
+    ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
+    ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
+    if not ghost_id:
+        raise DgCoreError(0, "当前没有活跃的幽灵角色。")
+
+    abilities = await client.get_abilities(ghost_id, game_id=game_id)
+    for a in abilities:
+        if a.get("name") == ability_name or a.get("id") == ability_name:
+            return a.get("id", ability_name)
+    # Fallback: pass the name as-is and let the backend handle the error
+    return ability_name
 
 
 # ── /re (同色重投) ─────────────────────────────────────────
@@ -159,13 +188,22 @@ async def handle_re(
         game_id = get_game_id()
         session_id = get_session_id(event)
         user_id = await get_dg_user_id(event)
+        group_id = get_group_id(event)
 
+        # Retrieve cached event_name from last /event check
+        event_name = get_state().get_last_event_check(group_id, user_id)
+        if not event_name:
+            await matcher.finish("你还没有进行过检定，请先使用 /event check 进行检定。")
+
+        # Resolve ability name → ability_id
         client = get_client()
+        ability_id = await _resolve_ability_id(client, game_id, user_id, ability_name)
+
         data = await client.submit_event(
             game_id,
             session_id,
             user_id,
-            {"event_type": "reroll", "ability_id": ability_name},
+            {"event_type": "reroll", "event_name": event_name, "ability_id": ability_id},
         )
 
         if data.get("success") and data.get("data"):
@@ -201,13 +239,22 @@ async def handle_hre(
         game_id = get_game_id()
         session_id = get_session_id(event)
         user_id = await get_dg_user_id(event)
+        group_id = get_group_id(event)
 
+        # Retrieve cached event_name from last /event check
+        event_name = get_state().get_last_event_check(group_id, user_id)
+        if not event_name:
+            await matcher.finish("你还没有进行过检定，请先使用 /event check 进行检定。")
+
+        # Resolve ability name → ability_id
         client = get_client()
+        ability_id = await _resolve_ability_id(client, game_id, user_id, ability_name)
+
         data = await client.submit_event(
             game_id,
             session_id,
             user_id,
-            {"event_type": "hard_reroll", "ability_id": ability_name},
+            {"event_type": "hard_reroll", "event_name": event_name, "ability_id": ability_id},
         )
 
         if data.get("success") and data.get("data"):

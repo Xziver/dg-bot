@@ -131,7 +131,7 @@ async def _set(
     # Get current character's ghost_id first
     char_data = await client.get_active_character(game_id, user_id)
     ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
-    ghost_id = ghost.get("id", "")
+    ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
     if not ghost_id:
         await matcher.finish("当前没有活跃的幽灵角色。")
 
@@ -265,17 +265,17 @@ async def _create_ghost(
     # Fetch active character to get origin patient info
     char_data = await client.get_active_character(game_id, user_id)
     patient = char_data.get("patient") or char_data.get("active_patient") or {}
-    patient_id = patient.get("id", "")
+    patient_id = patient.get("patient_id", patient.get("id", ""))
     patient_name = patient.get("name", "")
     soul_color = patient.get("soul_color", "")
     if not patient_id:
         await matcher.finish("你当前没有活跃的患者角色，请先创建患者。")
 
     data = await client.create_ghost(
-        game_id, f"{patient_name}的幽灵", soul_color, user_id,
+        game_id, f"{patient_name}的幽灵", soul_color,
         origin_patient_id=patient_id,
         creator_user_id=user_id,
-        hp=hp,
+        initial_hp=hp,
     )
     ghost_name = data.get("name", "")
     await matcher.finish(f"幽灵角色创建成功！名称: {ghost_name}\n等待DM分配后由对方玩家设定详细信息。")
@@ -331,11 +331,11 @@ async def handle_abilities(
         client = get_client()
         char_data = await client.get_active_character(game_id, user_id)
         ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
-        ghost_id = ghost.get("id", "")
+        ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
         if not ghost_id:
             await matcher.finish("当前没有活跃的幽灵角色。")
 
-        data = await client.get_abilities(ghost_id)
+        data = await client.get_abilities(ghost_id, game_id=game_id)
         await matcher.finish(format_abilities(data))
     except DgCoreError as e:
         await matcher.finish(format_api_error(e))

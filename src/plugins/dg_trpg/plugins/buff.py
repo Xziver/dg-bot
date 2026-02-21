@@ -69,7 +69,7 @@ async def _add(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> Non
     client = get_client()
     char_data = await client.get_active_character(game_id, user_id)
     ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
-    ghost_id = ghost.get("id", "")
+    ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
     if not ghost_id:
         await matcher.finish("当前没有活跃的幽灵角色。")
 
@@ -88,7 +88,7 @@ async def _show(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> No
     client = get_client()
     char_data = await client.get_active_character(game_id, user_id)
     ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
-    ghost_id = ghost.get("id", "")
+    ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
     if not ghost_id:
         await matcher.finish("当前没有活跃的幽灵角色。")
 
@@ -108,7 +108,7 @@ async def _remove(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
     # Need to find the buff ID by name first
     char_data = await client.get_active_character(game_id, user_id)
     ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
-    ghost_id = ghost.get("id", "")
+    ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
     if not ghost_id:
         await matcher.finish("当前没有活跃的幽灵角色。")
 

@@ -118,8 +118,16 @@ async def _grant(
     if not target_user_id:
         target_user_id = user_id
 
+    # Resolve target's active patient_id (v2 API requires patient_id in item_grant)
     client = get_client()
-    await client.grant_item(game_id, target_user_id, item_name, count=count)
+    char_data = await client.get_active_character(game_id, target_user_id)
+    patient = char_data.get("patient") or char_data.get("active_patient") or {}
+    patient_id = patient.get("patient_id", patient.get("id", ""))
+    if not patient_id:
+        await matcher.finish("目标玩家没有活跃的患者角色，无法发放道具。")
+        return
+
+    await client.grant_item(game_id, user_id, patient_id, item_name, count=count)
     count_str = f" x{count}" if count > 1 else ""
     await matcher.finish(f"道具 {item_name}{count_str} 已发放。")
 

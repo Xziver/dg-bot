@@ -18,6 +18,7 @@ class StateManager:
         self._group_regions_path = data_dir / "group_regions.json"
         self._group_locations_path = data_dir / "group_locations.json"
         self._session_cache_path = data_dir / "session_cache.json"
+        self._last_event_check: dict[str, str] = {}  # in-memory: "group:user" → event_name
 
     # --- File I/O helpers ---
 
@@ -111,6 +112,18 @@ class StateManager:
         if group_id in data:
             del data[group_id]
             self._write(self._session_cache_path, data)
+        # Also clear any cached last-event-check for this group
+        keys_to_remove = [k for k in self._last_event_check if k.startswith(f"{group_id}:")]
+        for k in keys_to_remove:
+            del self._last_event_check[k]
+
+    # --- Last event check (in-memory, per user per group) ---
+
+    def set_last_event_check(self, group_id: str, user_id: str, event_name: str) -> None:
+        self._last_event_check[f"{group_id}:{user_id}"] = event_name
+
+    def get_last_event_check(self, group_id: str, user_id: str) -> str | None:
+        return self._last_event_check.get(f"{group_id}:{user_id}")
 
 
 _state: StateManager | None = None

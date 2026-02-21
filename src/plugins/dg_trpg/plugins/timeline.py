@@ -65,7 +65,7 @@ async def _info(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> No
             pass
 
     client = get_client()
-    data = await client.get_session_timeline(session_id, count=count)
+    data = await client.get_session_timeline(session_id, limit=count)
     await matcher.finish(format_timeline(data))
 
 
@@ -103,7 +103,7 @@ async def _game(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> No
             pass
 
     client = get_client()
-    data = await client.get_game_timeline(game_id, count=count)
+    data = await client.get_game_timeline(game_id, limit=count)
     await matcher.finish(format_timeline(data))
 
 
