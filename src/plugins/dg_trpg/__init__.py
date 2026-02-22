@@ -10,3 +10,6 @@ __plugin_meta__ = PluginMetadata(
 )
 
 sub_plugins = nonebot.load_plugins(str(Path(__file__).parent / "plugins"))
+
+# Register startup cache validation hook
+from .core import cache_validator  # noqa: F401

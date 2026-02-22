@@ -12,6 +12,7 @@ from ..core.context import (
     get_group_id,
     get_plain_args,
     get_region_id,
+    handle_stale_cache_404,
 )
 from ..core.errors import DgCoreError, format_api_error, format_context_error
 from ..core.formatters import format_location_list, format_location_players
@@ -50,6 +51,10 @@ async def handle_location(
                 "用法: /location [add|list|players|bind|unbind]"
             )
     except DgCoreError as e:
+        if e.status_code == 404:
+            handle_stale_cache_404(
+                e, get_group_id(event), used_region=True, used_location=True,
+            )
         await matcher.finish(format_api_error(e))
     except Exception as e:
         msg = format_context_error(e)

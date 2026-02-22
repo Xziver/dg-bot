@@ -198,6 +198,12 @@ HELP_TOPICS: dict[str, str] = {
         "/timeline game [数量] - 查看游戏时间线"
     ),
     "jrrp": "今日运势\n用法: /jrrp\n查询今日运势值(0-100)。",
+    "cache": (
+        "缓存管理 (管理员)\n"
+        "/cache status - 查看缓存状态\n"
+        "/cache flush [all|user|region|location|session] - 清除缓存\n"
+        "/cache validate - 重新验证缓存"
+    ),
 }
 
 HELP_MAIN = (
@@ -214,6 +220,7 @@ HELP_MAIN = (
     "区域: /region\n"
     "地点: /location\n"
     "时间线: /timeline\n"
+    "管理: /cache\n"
     "其他: /help /jrrp\n"
     "\n输入 /help <命令> 查看具体用法，例如: /help roll"
 )

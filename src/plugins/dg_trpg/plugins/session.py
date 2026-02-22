@@ -13,6 +13,7 @@ from ..core.context import (
     get_location_id,
     get_plain_args,
     get_session_id,
+    handle_stale_cache_404,
     resolve_player_target,
 )
 from ..core.errors import DgCoreError, NoActiveSession, format_api_error, format_context_error
@@ -53,6 +54,8 @@ async def handle_session(
                 "用法: /session [start|end|pause|resume|info|add|remove]"
             )
     except DgCoreError as e:
+        if e.status_code == 404:
+            handle_stale_cache_404(e, get_group_id(event), used_session=True)
         await matcher.finish(format_api_error(e))
     except Exception as e:
         msg = format_context_error(e)

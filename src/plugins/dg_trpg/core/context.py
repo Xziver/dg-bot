@@ -6,7 +6,7 @@ from nonebot import get_plugin_config
 
 from ..config import Config
 from .auth import resolve_user
-from .errors import GameNotConfigured, LocationNotBound, NeedRegistration, NoActiveSession, RegionNotBound
+from .errors import DgCoreError, GameNotConfigured, LocationNotBound, NeedRegistration, NoActiveSession, RegionNotBound, StaleCacheError
 from .state import get_state
 
 # Characters in TRPG never have purely numeric names, so this threshold
@@ -108,6 +108,44 @@ async def resolve_player_target(args: Message, sub_args: str) -> str | None:
 
     # 3. Character name / other identifier — pass through for API resolution
     return target
+
+
+def handle_stale_cache_404(
+    e: DgCoreError,
+    group_id: str,
+    *,
+    used_session: bool = False,
+    used_region: bool = False,
+    used_location: bool = False,
+) -> None:
+    """Check if a 404 error is caused by stale cache and clear if so.
+
+    Call from handler error boundaries when a DgCoreError with status 404
+    is caught. If a cached ID was likely stale, clears it and raises
+    StaleCacheError (handled by format_context_error). Otherwise re-raises
+    the original error.
+    """
+    if e.status_code != 404:
+        raise e
+
+    state = get_state()
+
+    # Check session first (most likely to go stale)
+    if used_session and state.get_session(group_id):
+        state.clear_session(group_id)
+        raise StaleCacheError("session")
+
+    if used_region and state.get_region(group_id):
+        state.remove_region(group_id)
+        state.remove_location(group_id)  # location depends on region
+        raise StaleCacheError("region")
+
+    if used_location and state.get_location(group_id):
+        state.remove_location(group_id)
+        raise StaleCacheError("location")
+
+    # Not a cache issue, re-raise original error
+    raise e
 
 
 async def resolve_patient_id(game_id: str, user_id: str, target: str) -> str:

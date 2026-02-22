@@ -125,6 +125,64 @@ class StateManager:
     def get_last_event_check(self, group_id: str, user_id: str) -> str | None:
         return self._last_event_check.get(f"{group_id}:{user_id}")
 
+    # --- Bulk read ---
+
+    def get_all_users(self) -> dict[str, Any]:
+        return self._read(self._user_cache_path)
+
+    def get_all_regions(self) -> dict[str, Any]:
+        return self._read(self._group_regions_path)
+
+    def get_all_locations(self) -> dict[str, Any]:
+        return self._read(self._group_locations_path)
+
+    def get_all_sessions(self) -> dict[str, Any]:
+        return self._read(self._session_cache_path)
+
+    # --- Bulk clear ---
+
+    def clear_all_users(self) -> int:
+        """Clear entire user cache. Returns number of entries removed."""
+        data = self._read(self._user_cache_path)
+        count = len(data)
+        if count:
+            self._write(self._user_cache_path, {})
+        return count
+
+    def clear_all_regions(self) -> int:
+        """Clear all group-to-region bindings. Returns number of entries removed."""
+        data = self._read(self._group_regions_path)
+        count = len(data)
+        if count:
+            self._write(self._group_regions_path, {})
+        return count
+
+    def clear_all_locations(self) -> int:
+        """Clear all group-to-location bindings. Returns number of entries removed."""
+        data = self._read(self._group_locations_path)
+        count = len(data)
+        if count:
+            self._write(self._group_locations_path, {})
+        return count
+
+    def clear_all_sessions(self) -> int:
+        """Clear all session cache entries and in-memory event checks. Returns number removed."""
+        data = self._read(self._session_cache_path)
+        count = len(data)
+        if count:
+            self._write(self._session_cache_path, {})
+        self._last_event_check.clear()
+        return count
+
+    def clear_all(self) -> dict[str, int]:
+        """Clear all caches. Returns counts per cache type."""
+        return {
+            "user": self.clear_all_users(),
+            "region": self.clear_all_regions(),
+            "location": self.clear_all_locations(),
+            "session": self.clear_all_sessions(),
+        }
+
 
 _state: StateManager | None = None
 

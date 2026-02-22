@@ -50,6 +50,15 @@ class GameNotConfigured(Exception):
         super().__init__("DG_GAME_ID not configured")
 
 
+class StaleCacheError(Exception):
+    """A cached ID was rejected by the backend (404). Cache has been auto-cleared."""
+
+    def __init__(self, cache_type: str, detail: str = "") -> None:
+        self.cache_type = cache_type
+        self.detail = detail
+        super().__init__(f"Stale {cache_type} cache: {detail}")
+
+
 class InsufficientPermission(Exception):
     """User lacks required permission."""
 
@@ -92,4 +101,12 @@ def format_context_error(e: Exception) -> str | None:
         return "游戏尚未配置，请管理员设置 DG_GAME_ID"
     if isinstance(e, InsufficientPermission):
         return f"权限不足: {e.detail}"
+    if isinstance(e, StaleCacheError):
+        _stale_messages = {
+            "user": "你的账号缓存已失效，请重新使用任意命令（将自动重新解析）。",
+            "region": "本群绑定的区域已失效（后端数据已重置）。请DM使用 /region bind 重新绑定。",
+            "location": "本群绑定的地点已失效（后端数据已重置）。请DM使用 /location bind 重新绑定。",
+            "session": "缓存的场次已失效，已自动清除。请DM使用 /session start 创建新场次。",
+        }
+        return _stale_messages.get(e.cache_type, f"缓存已失效: {e.detail}")
     return None
