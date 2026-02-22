@@ -283,7 +283,8 @@ async def _create_ghost(
         initial_hp=hp,
     )
     ghost_name = data.get("name", "")
-    await matcher.finish(f"幽灵角色创建成功！名称: {ghost_name}\n等待DM分配后由对方玩家设定详细信息。")
+    ghost_id = data.get("id", "")
+    await matcher.finish(f"幽灵角色创建成功！\n名称: {ghost_name}\nid: {ghost_id}\n等待DM分配后由对方玩家设定详细信息。")
 
 
 async def _assign(
