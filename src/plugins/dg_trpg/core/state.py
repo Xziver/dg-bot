@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import nonebot_plugin_localstore as store
+from nonebot import logger
 
 
 class StateManager:
@@ -43,12 +44,14 @@ class StateManager:
         data = self._read(self._user_cache_path)
         data[qq_uid] = {"user_id": user_id, "username": username}
         self._write(self._user_cache_path, data)
+        logger.debug("Cache set user: qq_uid={} -> user_id={}", qq_uid, user_id)
 
     def remove_user(self, qq_uid: str) -> bool:
         data = self._read(self._user_cache_path)
         if qq_uid in data:
             del data[qq_uid]
             self._write(self._user_cache_path, data)
+            logger.debug("Cache removed user: qq_uid={}", qq_uid)
             return True
         return False
 
@@ -68,12 +71,14 @@ class StateManager:
             "region_name": region_name,
         }
         self._write(self._group_regions_path, data)
+        logger.debug("Cache set region: group={} -> region_id={}", group_id, region_id)
 
     def remove_region(self, group_id: str) -> bool:
         data = self._read(self._group_regions_path)
         if group_id in data:
             del data[group_id]
             self._write(self._group_regions_path, data)
+            logger.debug("Cache removed region: group={}", group_id)
             return True
         return False
 
@@ -87,12 +92,14 @@ class StateManager:
         data = self._read(self._group_locations_path)
         data[group_id] = {"location_id": location_id, "location_name": location_name}
         self._write(self._group_locations_path, data)
+        logger.debug("Cache set location: group={} -> location_id={}", group_id, location_id)
 
     def remove_location(self, group_id: str) -> bool:
         data = self._read(self._group_locations_path)
         if group_id in data:
             del data[group_id]
             self._write(self._group_locations_path, data)
+            logger.debug("Cache removed location: group={}", group_id)
             return True
         return False
 
@@ -106,12 +113,14 @@ class StateManager:
         data = self._read(self._session_cache_path)
         data[group_id] = session_id
         self._write(self._session_cache_path, data)
+        logger.debug("Cache set session: group={} -> session_id={}", group_id, session_id)
 
     def clear_session(self, group_id: str) -> None:
         data = self._read(self._session_cache_path)
         if group_id in data:
             del data[group_id]
             self._write(self._session_cache_path, data)
+            logger.debug("Cache cleared session: group={}", group_id)
         # Also clear any cached last-event-check for this group
         keys_to_remove = [k for k in self._last_event_check if k.startswith(f"{group_id}:")]
         for k in keys_to_remove:
@@ -147,6 +156,7 @@ class StateManager:
         count = len(data)
         if count:
             self._write(self._user_cache_path, {})
+            logger.info("Cleared all user cache ({} entries)", count)
         return count
 
     def clear_all_regions(self) -> int:
@@ -155,6 +165,7 @@ class StateManager:
         count = len(data)
         if count:
             self._write(self._group_regions_path, {})
+            logger.info("Cleared all region cache ({} entries)", count)
         return count
 
     def clear_all_locations(self) -> int:
@@ -163,6 +174,7 @@ class StateManager:
         count = len(data)
         if count:
             self._write(self._group_locations_path, {})
+            logger.info("Cleared all location cache ({} entries)", count)
         return count
 
     def clear_all_sessions(self) -> int:
@@ -171,6 +183,7 @@ class StateManager:
         count = len(data)
         if count:
             self._write(self._session_cache_path, {})
+            logger.info("Cleared all session cache ({} entries)", count)
         self._last_event_check.clear()
         return count
 

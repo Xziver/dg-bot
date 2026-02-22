@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 import nonebot
-from nonebot import get_plugin_config
+from nonebot import get_plugin_config, logger
 
 from ..config import Config
 from .errors import DgCoreError
@@ -33,9 +33,11 @@ class DgCoreClient:
         json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        logger.debug("API {} {}", method, path)
         try:
             resp = await self._http.request(method, path, json=json, params=params)
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
+            logger.warning("API connection error: {} {} - {}", method, path, exc)
             raise DgCoreError(0, "无法连接到游戏服务器，请稍后再试")
         if resp.status_code >= 400:
             detail = ""
@@ -44,6 +46,7 @@ class DgCoreClient:
                 detail = body.get("detail", str(body))
             except Exception:
                 detail = resp.text
+            logger.warning("API error: {} {} -> {} {}", method, path, resp.status_code, detail)
             raise DgCoreError(resp.status_code, detail)
         if resp.status_code == 204:
             return {}
@@ -529,6 +532,7 @@ def get_client() -> DgCoreClient:
     if _client is None:
         config = get_plugin_config(Config)
         _client = DgCoreClient(config.dg_core_url, config.dg_bot_api_key)
+        logger.info("DgCoreClient initialized (base_url={})", config.dg_core_url)
     return _client
 
 
@@ -542,6 +546,7 @@ def _register_shutdown() -> None:
             if _client is not None:
                 await _client.close()
                 _client = None
+                logger.info("DgCoreClient shut down")
 
     except Exception:
         pass

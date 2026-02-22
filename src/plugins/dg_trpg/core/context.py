@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageEvent
 from nonebot.params import CommandArg
-from nonebot import get_plugin_config
+from nonebot import get_plugin_config, logger
 
 from ..config import Config
 from .auth import resolve_user
@@ -133,15 +133,18 @@ def handle_stale_cache_404(
     # Check session first (most likely to go stale)
     if used_session and state.get_session(group_id):
         state.clear_session(group_id)
+        logger.warning("Stale session cache cleared for group {}", group_id)
         raise StaleCacheError("session")
 
     if used_region and state.get_region(group_id):
         state.remove_region(group_id)
         state.remove_location(group_id)  # location depends on region
+        logger.warning("Stale region cache cleared for group {}", group_id)
         raise StaleCacheError("region")
 
     if used_location and state.get_location(group_id):
         state.remove_location(group_id)
+        logger.warning("Stale location cache cleared for group {}", group_id)
         raise StaleCacheError("location")
 
     # Not a cache issue, re-raise original error

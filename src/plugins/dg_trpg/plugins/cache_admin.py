@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import logging
-
-from nonebot import on_command
+from nonebot import logger, on_command
 from nonebot.adapters.onebot.v11 import Message, MessageEvent
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -15,7 +13,6 @@ from ..core.errors import format_context_error
 from ..core.permissions import require_superuser
 from ..core.state import get_state
 
-logger = logging.getLogger("dg_trpg.cache_admin")
 
 # ── /cache (/缓存) ───────────────────────────────────────
 
@@ -77,23 +74,23 @@ async def _flush(matcher: Matcher, target: str) -> None:
             f"场次缓存: {counts['session']} 条",
             f"共清除 {total} 条缓存",
         ]
-        logger.warning("Admin flushed all caches: %s", counts)
+        logger.warning("Admin flushed all caches: {}", counts)
         await matcher.finish("\n".join(lines))
     elif target == "user":
         count = state.clear_all_users()
-        logger.warning("Admin flushed user cache: %d entries", count)
+        logger.warning("Admin flushed user cache: {} entries", count)
         await matcher.finish(f"用户缓存已清除 ({count} 条)")
     elif target == "region":
         count = state.clear_all_regions()
-        logger.warning("Admin flushed region cache: %d entries", count)
+        logger.warning("Admin flushed region cache: {} entries", count)
         await matcher.finish(f"区域绑定已清除 ({count} 条)")
     elif target == "location":
         count = state.clear_all_locations()
-        logger.warning("Admin flushed location cache: %d entries", count)
+        logger.warning("Admin flushed location cache: {} entries", count)
         await matcher.finish(f"地点绑定已清除 ({count} 条)")
     elif target == "session":
         count = state.clear_all_sessions()
-        logger.warning("Admin flushed session cache: %d entries", count)
+        logger.warning("Admin flushed session cache: {} entries", count)
         await matcher.finish(f"场次缓存已清除 ({count} 条)")
 
 

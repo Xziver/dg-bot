@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nonebot import on_command
+from nonebot import logger, on_command
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -90,6 +90,7 @@ async def _start(
             if e.status_code == 404:
                 # Cached session no longer exists on backend, clear stale cache
                 state.clear_session(group_id)
+                logger.warning("Stale session cleared during start: group={}", group_id)
             else:
                 raise
 
@@ -115,6 +116,7 @@ async def _start(
     session_id = data.get("data", {}).get("session_id", data.get("session_id", ""))
     if session_id:
         state.set_session(group_id, session_id)
+        logger.info("Session started: group={}, session_id={}", group_id, session_id)
 
     if data.get("success"):
         msg = "场次已开始！"
@@ -141,6 +143,7 @@ async def _end(
 
     # Clear session cache
     get_state().clear_session(group_id)
+    logger.info("Session ended: group={}", group_id)
 
     if data.get("success"):
         await matcher.finish("场次已结束。")
@@ -157,6 +160,7 @@ async def _pause(
 
     client = get_client()
     await client.pause_session(session_id, user_id=user_id)
+    logger.info("Session paused: session_id={}", session_id)
     await matcher.finish("场次已暂停。")
 
 
@@ -169,6 +173,7 @@ async def _resume(
 
     client = get_client()
     await client.resume_session(session_id, user_id=user_id)
+    logger.info("Session resumed: session_id={}", session_id)
     await matcher.finish("场次已恢复。")
 
 
@@ -200,6 +205,7 @@ async def _info(
     except DgCoreError as e:
         if e.status_code == 404:
             state.clear_session(group_id)
+            logger.warning("Stale session cleared during info: group={}", group_id)
             await matcher.finish("缓存的场次已失效，已清除。请DM使用 /session start 创建新场次。")
         raise
 

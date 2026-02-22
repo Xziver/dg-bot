@@ -6,18 +6,16 @@ Stale entries are cleared. If backend is unreachable, validation is skipped.
 
 from __future__ import annotations
 
-import logging
 import random
 
 import nonebot
-from nonebot import get_plugin_config
+from nonebot import get_plugin_config, logger
 
 from ..config import Config
 from .api_client import get_client
 from .errors import DgCoreError
 from .state import get_state
 
-logger = logging.getLogger("dg_trpg.cache_validator")
 
 _USER_SAMPLE_SIZE = 3
 
@@ -40,14 +38,14 @@ async def _validate_users() -> tuple[int, int]:
         except DgCoreError as e:
             if e.status_code == 404:
                 stale_found = True
-                logger.info("Sampled user QQ:%s returned 404, backend likely reset", qq_uid)
+                logger.info("Sampled user QQ:{} returned 404, backend likely reset", qq_uid)
                 break
             else:
-                logger.warning("Failed to validate user QQ:%s: %s", qq_uid, e)
+                logger.warning("Failed to validate user QQ:{}: {}", qq_uid, e)
 
     if stale_found:
         count = state.clear_all_users()
-        logger.warning("Backend reset detected. Cleared entire user cache (%d entries)", count)
+        logger.warning("Backend reset detected. Cleared entire user cache ({} entries)", count)
         return 0, count
 
     return len(users), 0
@@ -78,7 +76,7 @@ async def _validate_regions(game_id: str) -> tuple[int, int]:
             state.remove_region(group_id)
             cleared += 1
             logger.info(
-                "Cleared stale region binding for group %s (region %s no longer exists)",
+                "Cleared stale region binding for group {} (region {} no longer exists)",
                 group_id,
                 region_data.get("region_id"),
             )
@@ -111,7 +109,7 @@ async def _validate_locations(game_id: str) -> tuple[int, int]:
                     if loc_id:
                         valid_location_ids.add(loc_id)
             except DgCoreError:
-                logger.warning("Failed to fetch locations for region %s, skipping", rid)
+                logger.warning("Failed to fetch locations for region {}, skipping", rid)
 
     # Groups with no region binding also have stale location bindings
     groups_with_region = set(regions_cache.keys())
@@ -122,14 +120,14 @@ async def _validate_locations(game_id: str) -> tuple[int, int]:
         if group_id not in groups_with_region:
             state.remove_location(group_id)
             cleared += 1
-            logger.info("Cleared location for group %s (region also cleared)", group_id)
+            logger.info("Cleared location for group {} (region also cleared)", group_id)
         elif loc_id in valid_location_ids:
             kept += 1
         else:
             state.remove_location(group_id)
             cleared += 1
             logger.info(
-                "Cleared stale location for group %s (location %s no longer exists)",
+                "Cleared stale location for group {} (location {} no longer exists)",
                 group_id,
                 loc_id,
             )
@@ -153,14 +151,14 @@ async def _validate_sessions() -> tuple[int, int]:
             else:
                 state.clear_session(group_id)
                 cleared += 1
-                logger.info("Cleared ended session %s for group %s", session_id, group_id)
+                logger.info("Cleared ended session {} for group {}", session_id, group_id)
         except DgCoreError as e:
             if e.status_code == 404:
                 state.clear_session(group_id)
                 cleared += 1
-                logger.info("Cleared stale session %s for group %s (404)", session_id, group_id)
+                logger.info("Cleared stale session {} for group {} (404)", session_id, group_id)
             else:
-                logger.warning("Failed to validate session %s: %s", session_id, e)
+                logger.warning("Failed to validate session {}: {}", session_id, e)
                 kept += 1  # Keep on non-404 errors (might be transient)
 
     return kept, cleared
@@ -179,21 +177,21 @@ async def validate_caches() -> None:
 
     try:
         u_kept, u_cleared = await _validate_users()
-        logger.info("Users: kept=%d, cleared=%d", u_kept, u_cleared)
+        logger.info("Users: kept={}, cleared={}", u_kept, u_cleared)
 
         r_kept, r_cleared = await _validate_regions(game_id)
-        logger.info("Regions: kept=%d, cleared=%d", r_kept, r_cleared)
+        logger.info("Regions: kept={}, cleared={}", r_kept, r_cleared)
 
         # Location validation depends on regions being validated first
         l_kept, l_cleared = await _validate_locations(game_id)
-        logger.info("Locations: kept=%d, cleared=%d", l_kept, l_cleared)
+        logger.info("Locations: kept={}, cleared={}", l_kept, l_cleared)
 
         s_kept, s_cleared = await _validate_sessions()
-        logger.info("Sessions: kept=%d, cleared=%d", s_kept, s_cleared)
+        logger.info("Sessions: kept={}, cleared={}", s_kept, s_cleared)
 
         total_cleared = u_cleared + r_cleared + l_cleared + s_cleared
         if total_cleared:
-            logger.warning("Cache validation complete: %d stale entries cleared", total_cleared)
+            logger.warning("Cache validation complete: {} stale entries cleared", total_cleared)
         else:
             logger.info("Cache validation complete: all entries valid")
 
