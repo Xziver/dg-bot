@@ -8,7 +8,7 @@ Built on [NoneBot2](https://nonebot.dev/) with the OneBot V11 adapter.
 
 ```
 QQ群 A ──┐                          ┌── Region A (数据荒原)
-QQ群 B ──┼── dg-bot ────────────►│── Region B (信号之海)  ──► dg-core
+QQ群 B ──┼── dg-bot ───────────────►│── Region B (信号之海)  ──► dg-core
 QQ群 C ──┘   (thin client)          └── Region C (灰山城)        (game engine)
 ```
 
@@ -178,7 +178,3 @@ uv run nb run               # Start the bot
 uv run pytest               # Run tests
 uv add <package>            # Add a dependency
 ```
-
-## License
-
-All rights reserved.
