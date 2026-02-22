@@ -3,6 +3,37 @@ from __future__ import annotations
 from typing import Any
 
 
+_EVENT_TYPE_LABELS: dict[str, str] = {
+    "session_start": "会话开始",
+    "session_end": "会话结束",
+    "event_check": "事件判定",
+    "reroll": "同色重投",
+    "hard_reroll": "异色重投",
+    "attack": "攻击",
+    "defend": "防御",
+    "apply_fragment": "碎片应用",
+    "hp_change": "HP变动",
+    "region_transition": "区域移动",
+    "location_transition": "地点移动",
+    "comm_request": "通信请求",
+    "comm_accept": "通信接受",
+    "comm_reject": "通信拒绝",
+    "comm_cancel": "通信取消",
+    "item_use": "道具使用",
+    "buff_add": "添加Buff",
+    "buff_remove": "移除Buff",
+    "item_grant": "发放道具",
+    "event_define": "定义事件",
+    "event_deactivate": "停用事件",
+    "attribute_set": "属性设置",
+    "ability_add": "添加能力",
+    "narration": "旁白叙述",
+    "message": "消息",
+    "custom": "自定义",
+    "system": "系统",
+}
+
+
 def format_character(data: dict[str, Any]) -> str:
     lines: list[str] = ["【角色信息】"]
 
@@ -161,13 +192,41 @@ def format_timeline(data: list[dict[str, Any]]) -> str:
         return "暂无时间线记录。"
     lines = ["【时间线】"]
     for entry in data:
-        ts = entry.get("timestamp", "")
+        ts = entry.get("created_at", "") or entry.get("timestamp", "")
         event_type = entry.get("event_type", "?")
+        seq = entry.get("seq")
+        snapshot = entry.get("player_snapshot")
+        narrative = entry.get("narrative")
         entry_data = entry.get("data") or {}
-        summary = entry_data.get("summary", entry_data.get("description", ""))
-        time_str = f"[{ts}] " if ts else ""
-        detail = f": {summary}" if summary else ""
-        lines.append(f"{time_str}{event_type}{detail}")
+
+        type_label = _EVENT_TYPE_LABELS.get(event_type, event_type)
+
+        # Build time string — show only HH:MM if full timestamp
+        time_str = ""
+        if ts:
+            short_ts = ts[11:16] if len(ts) >= 16 else ts
+            time_str = f"[{short_ts}] "
+
+        seq_str = f"#{seq} " if seq is not None else ""
+
+        actor_str = ""
+        if snapshot:
+            display = (
+                snapshot.get("display_name")
+                or snapshot.get("username", "")
+            )
+            if display:
+                actor_str = f"{display} "
+
+        detail = ""
+        if narrative:
+            detail = f": {narrative}"
+        else:
+            summary = entry_data.get("summary", entry_data.get("description", ""))
+            if summary:
+                detail = f": {summary}"
+
+        lines.append(f"{time_str}{seq_str}[{type_label}] {actor_str}{detail}".rstrip())
     return "\n".join(lines)
 
 
