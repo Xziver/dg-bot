@@ -33,6 +33,26 @@ class BuffInfo(BaseModel):
     remaining_rounds: int = -1
 
 
+class PlayerSnapshotInfo(BaseModel):
+    user_id: str = ""
+    username: str = ""
+    role: str = ""
+    display_name: str = ""
+    patient_id: str | None = None
+    patient_name: str | None = None
+    soul_color: str | None = None
+    ghost_id: str | None = None
+    ghost_name: str | None = None
+    hp: int | None = None
+    hp_max: int | None = None
+    mp: int | None = None
+    mp_max: int | None = None
+    cmyk: CMYKValues | None = None
+    region_id: str | None = None
+    location_id: str | None = None
+    buffs: list[BuffInfo] = Field(default_factory=list)
+
+
 class GhostInfo(BaseModel):
     id: str
     name: str
@@ -103,9 +123,14 @@ class SessionInfo(BaseModel):
 
 class TimelineEntry(BaseModel):
     id: str = ""
+    seq: int | None = None
     event_type: str = ""
-    timestamp: str = ""
+    actor_id: str | None = None  # deprecated, use player_snapshot.user_id
+    player_snapshot: PlayerSnapshotInfo | None = None
+    narrative: str | None = None
     data: dict[str, Any] = Field(default_factory=dict)
+    result_data: dict[str, Any] = Field(default_factory=dict)
+    created_at: str = ""
 
 
 class ItemDefinition(BaseModel):

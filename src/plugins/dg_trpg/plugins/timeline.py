@@ -9,7 +9,6 @@ from ..core.api_client import get_client
 from ..core.context import get_game_id, get_group_id, get_plain_args, get_session_id, handle_stale_cache_404
 from ..core.errors import DgCoreError, format_api_error, format_context_error
 from ..core.formatters import format_timeline
-from ..core.state import get_state
 
 # ── /timeline ──────────────────────────────────────────────
 
@@ -43,7 +42,8 @@ async def handle_timeline(
             except ValueError:
                 await matcher.finish(
                     f"未知子命令: {subcmd}\n"
-                    "用法: /timeline [info|export|game|restore]"
+                    "用法: /timeline [info|export|game|restore]\n"
+                    "      /timeline game export — 导出游戏全局时间线"
                 )
     except DgCoreError as e:
         if e.status_code == 404:
@@ -75,32 +75,29 @@ async def _export(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
     session_id = get_session_id(event)
 
     client = get_client()
-    data = await client.get_session_timeline(session_id)
+    text = await client.export_session_timeline(session_id)
 
-    if not data:
+    if not text or not text.strip():
         await matcher.finish("暂无时间线记录可导出。")
 
-    # Format as exportable text
-    lines = ["=== 时间线导出 ==="]
-    for entry in data:
-        ts = entry.get("timestamp", "")
-        event_type = entry.get("event_type", "?")
-        entry_data = entry.get("data") or {}
-        summary = entry_data.get("summary", entry_data.get("description", ""))
-        detail = f": {summary}" if summary else ""
-        lines.append(f"[{ts}] {event_type}{detail}")
-    lines.append("=== 导出结束 ===")
-
-    await matcher.finish("\n".join(lines))
+    await matcher.finish(text)
 
 
 async def _game(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> None:
     game_id = get_game_id()
+    arg = sub_args.strip()
+
+    if arg == "export":
+        client = get_client()
+        text = await client.export_game_timeline(game_id)
+        if not text or not text.strip():
+            await matcher.finish("暂无游戏时间线记录可导出。")
+        await matcher.finish(text)
 
     count: int | None = None
-    if sub_args.strip():
+    if arg:
         try:
-            count = int(sub_args.strip())
+            count = int(arg)
         except ValueError:
             pass
 
