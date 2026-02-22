@@ -9,7 +9,6 @@ from ..core.api_client import get_client
 from ..core.context import (
     get_dg_user_id,
     get_game_id,
-    get_mentioned_qq_uid,
     get_plain_args,
     resolve_patient_id,
     resolve_player_target,
@@ -40,7 +39,6 @@ async def handle_character(
             "delete": _delete,
             "move": _move,
             "create": _create,
-            "assign": _assign,
         }
         handler = handlers.get(subcmd)
         if handler:
@@ -48,7 +46,7 @@ async def handle_character(
         else:
             await matcher.finish(
                 f"未知子命令: {subcmd}\n"
-                "用法: /character [show|list|switch|set|delete|move|create|assign]"
+                "用法: /character [show|list|switch|set|delete|move|create]"
             )
     except DgCoreError as e:
         await matcher.finish(format_api_error(e))
@@ -286,38 +284,6 @@ async def _create_ghost(
     ghost_id = data.get("id", "")
     await matcher.finish(f"幽灵角色创建成功！\n名称: {ghost_name}\nid: {ghost_id}\n等待DM分配后由对方玩家设定详细信息。")
 
-
-async def _assign(
-    matcher: Matcher,
-    event: GroupMessageEvent,
-    args: Message,
-    sub_args: str,
-) -> None:
-    parts = sub_args.split()
-    mentioned = get_mentioned_qq_uid(args)
-
-    if mentioned:
-        # @mention: all plain text is ghost_name, target from @mention
-        ghost_name = sub_args.strip()
-        target = await resolve_player_target(args, "")
-    elif len(parts) >= 2:
-        # QQ号/角色名: last token is player ref, rest is ghost_name
-        ghost_name = " ".join(parts[:-1])
-        target = await resolve_player_target(args, parts[-1])
-    else:
-        ghost_name = None
-        target = None
-
-    if not ghost_name or not target:
-        await matcher.finish("用法: /character assign <幽灵名称> <@玩家|QQ号|角色名>")
-
-    game_id = get_game_id()
-    user_id = await get_dg_user_id(event)
-    target_user_id = target
-
-    client = get_client()
-    data = await client.assign_companion(game_id, ghost_name, target_user_id, user_id)
-    await matcher.finish(f"幽灵 {ghost_name} 已分配给目标玩家。")
 
 
 # ── /abilities ─────────────────────────────────────────────

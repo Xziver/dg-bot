@@ -169,15 +169,6 @@ class DgCoreClient:
             "POST", f"/api/games/{game_id}/characters/ghosts", json=payload
         )
 
-    async def assign_companion(
-        self, game_id: str, ghost_id: str, patient_id: str, user_id: str
-    ) -> dict[str, Any]:
-        return await self._request(
-            "PUT",
-            f"/api/games/{game_id}/ghosts/{ghost_id}/companion",
-            json={"patient_id": patient_id},
-        )
-
     async def get_abilities(
         self, ghost_id: str, *, game_id: str = ""
     ) -> list[dict[str, Any]]:

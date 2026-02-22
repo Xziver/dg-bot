@@ -129,8 +129,7 @@ HELP_TOPICS: dict[str, str] = {
         "/character delete <名称|ID> - 删除角色\n"
         "/character move <地点> - 移动到地点\n"
         "/character create patient <名称> <颜色> [性别] [年龄] [身份] - 创建患者\n"
-        "/character create ghost <名称> <颜色> [HP] - 创建幽灵 (DM)\n"
-        "/character assign <幽灵> @玩家 - 分配同伴 (DM)"
+        "/character create ghost <名称> <颜色> [HP] - 创建幽灵 (DM)"
     ),
     "roll": "骰点\n用法: /roll <骰子表达式>\n例: /roll 2d6+3, /roll d100, /roll c+2",
     "buff": (
