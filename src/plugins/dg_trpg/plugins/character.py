@@ -185,7 +185,7 @@ async def _move(
         game_id,
         session_id,
         user_id,
-        {"event_type": "location_transition", "target_location_id": location_name},
+        {"event_type": "location_transition", "target_location_name": location_name},
     )
 
     if data.get("success"):
