@@ -52,6 +52,33 @@ class DgCoreClient:
             return {}
         return resp.json()
 
+    async def _request_text(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+    ) -> str:
+        """Make an API request expecting a text/plain response."""
+        logger.debug("API {} {} (text)", method, path)
+        try:
+            resp = await self._http.request(method, path, params=params)
+        except httpx.HTTPError as exc:
+            logger.warning("API connection error: {} {} - {}", method, path, exc)
+            raise DgCoreError(0, "无法连接到游戏服务器，请稍后再试")
+        if resp.status_code >= 400:
+            detail = ""
+            try:
+                body = resp.json()
+                detail = body.get("detail", str(body))
+            except Exception:
+                detail = resp.text
+            logger.warning(
+                "API error: {} {} -> {} {}", method, path, resp.status_code, detail
+            )
+            raise DgCoreError(resp.status_code, detail)
+        return resp.text
+
     # ── Auth ───────────────────────────────────────────────
 
     async def register(
@@ -488,6 +515,18 @@ class DgCoreClient:
         if isinstance(data, list):
             return data
         return data.get("entries", data.get("events", []))
+
+    async def export_session_timeline(self, session_id: str) -> str:
+        """Export session timeline as pre-formatted text (text/plain)."""
+        return await self._request_text(
+            "GET", f"/api/sessions/{session_id}/timeline/export"
+        )
+
+    async def export_game_timeline(self, game_id: str) -> str:
+        """Export game timeline as pre-formatted text (text/plain)."""
+        return await self._request_text(
+            "GET", f"/api/games/{game_id}/timeline/export"
+        )
 
     # ── Game ───────────────────────────────────────────────
 
