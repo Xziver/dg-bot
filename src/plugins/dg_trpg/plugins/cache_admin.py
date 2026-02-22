@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
+from nonebot.adapters.onebot.v11 import Message, MessageEvent
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
@@ -24,7 +24,7 @@ cache_cmd = on_command("cache", aliases={"缓存"}, priority=10, block=True)
 
 @cache_cmd.handle()
 async def handle_cache(
-    matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()
+    matcher: Matcher, event: MessageEvent, args: Message = CommandArg()
 ) -> None:
     try:
         require_superuser(event)
