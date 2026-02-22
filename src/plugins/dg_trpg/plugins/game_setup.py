@@ -115,7 +115,7 @@ async def _info(
     if players:
         player_strs = []
         for p in players:
-            uname = p.get("username", p.get("name", "?"))
+            uname = p.get("username", p.get("user_id", "?")[:8])
             role = p.get("role", "?")
             player_strs.append(f"{uname}({role})")
         lines.append(f"玩家: {', '.join(player_strs)}")
