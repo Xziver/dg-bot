@@ -17,9 +17,9 @@ from ..core.state import get_state
 
 logger = logging.getLogger("dg_trpg.cache_admin")
 
-# ── /缓存 (/cache) ───────────────────────────────────────
+# ── /cache (/缓存) ───────────────────────────────────────
 
-cache_cmd = on_command("缓存", aliases={"cache"}, priority=10, block=True)
+cache_cmd = on_command("cache", aliases={"缓存"}, priority=10, block=True)
 
 
 @cache_cmd.handle()
