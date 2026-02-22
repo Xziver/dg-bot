@@ -127,7 +127,7 @@ def format_buff_list(data: list[dict[str, Any]]) -> str:
 
 def format_session_info(data: dict[str, Any]) -> str:
     lines = ["【场次信息】"]
-    sid = data.get("id", "?")
+    sid = data.get("session_id", "?")
     location = data.get("location", data.get("location_name", "未知"))
     status = data.get("status", "unknown")
     lines.append(f"Session ID: {sid}")
@@ -191,8 +191,8 @@ def format_comm_list(data: list[dict[str, Any]]) -> str:
     lines = ["【通信请求列表】"]
     for i, req in enumerate(data, 1):
         req_id = req.get("id", "?")
-        initiator = req.get("initiator_name", req.get("initiator_id", "?"))
-        target = req.get("target_name", req.get("target_id", "?"))
+        initiator = req.get("initiator_patient_name", req.get("initiator_patient_id", "?"))
+        target = req.get("target_patient_name", req.get("target_patient_id", "?"))
         lines.append(f"{i}. 来自{initiator}的请求 (目标: {target}) id={req_id}")
     return "\n".join(lines)
 

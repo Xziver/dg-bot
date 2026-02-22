@@ -459,7 +459,7 @@ class DgCoreClient:
         )
         if isinstance(data, list):
             return data
-        return data.get("communications", [])
+        return data.get("pending_requests", [])
 
     # ── Timeline ───────────────────────────────────────────
 
