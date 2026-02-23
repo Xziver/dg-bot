@@ -159,7 +159,7 @@ def format_buff_list(data: list[dict[str, Any]]) -> str:
 def format_session_info(data: dict[str, Any]) -> str:
     lines = ["【场次信息】"]
     sid = data.get("session_id", "?")
-    location = data.get("location", data.get("location_name", "未知"))
+    location = data.get("location_name", "未知")
     status = data.get("status", "unknown")
     lines.append(f"Session ID: {sid}")
     lines.append(f"地点: {location}")
@@ -169,12 +169,12 @@ def format_session_info(data: dict[str, Any]) -> str:
     if players:
         player_strs = []
         for p in players:
-            name = p.get("username", p.get("name", "?"))
-            char_name = p.get("character_name", "")
+            # name = p.get("username", p.get("name", "?"))
+            char_name = p.get("patient_name", "?")
             if char_name:
-                player_strs.append(f"{name}（{char_name}）")
+                player_strs.append(f"{char_name}")
             else:
-                player_strs.append(name)
+                player_strs.append("?")
         lines.append(f"参与玩家: {', '.join(player_strs)}")
     else:
         lines.append("参与玩家: 无")
