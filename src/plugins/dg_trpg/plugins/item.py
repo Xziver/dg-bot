@@ -9,6 +9,7 @@ from nonebot.params import CommandArg
 
 from ..core.api_client import get_client
 from ..core.context import (
+    extract_target_from_args,
     get_dg_user_id,
     get_game_id,
     get_plain_args,
@@ -67,12 +68,19 @@ async def _list(
 async def _use(
     matcher: Matcher, event: GroupMessageEvent, args: Message, sub_args: str
 ) -> None:
-    if not sub_args:
-        await matcher.finish("用法: /item use <道具名称>")
+    target_user_id, remaining = await extract_target_from_args(args, sub_args)
 
-    item_name = sub_args.strip()
+    if not remaining:
+        await matcher.finish(
+            "用法: /item use [@目标] <道具名称>\n"
+            "例: /item use 治疗药水\n"
+            "例: /item use @玩家 治疗药水"
+        )
+
+    item_name = remaining.strip()
     game_id = get_game_id()
-    user_id = await get_dg_user_id(event)
+    sender_user_id = await get_dg_user_id(event)
+    acting_user_id = target_user_id or sender_user_id
 
     try:
         session_id = get_session_id(event)
@@ -83,7 +91,7 @@ async def _use(
     data = await client.submit_event(
         game_id,
         session_id,
-        user_id,
+        acting_user_id,
         {"event_type": "item_use", "item_def_id": item_name},
     )
     await matcher.finish(format_engine_result(data))

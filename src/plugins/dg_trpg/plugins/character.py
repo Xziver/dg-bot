@@ -7,6 +7,7 @@ from nonebot.params import CommandArg
 
 from ..core.api_client import get_client
 from ..core.context import (
+    extract_target_from_args,
     get_dg_user_id,
     get_game_id,
     get_plain_args,
@@ -114,9 +115,15 @@ async def _set(
     args: Message,
     sub_args: str,
 ) -> None:
-    parts = sub_args.split()
+    target_user_id, remaining = await extract_target_from_args(args, sub_args)
+
+    parts = remaining.split()
     if len(parts) < 2:
-        await matcher.finish("用法: /character set <属性名称> <新值>\n例: /character set health 5")
+        await matcher.finish(
+            "用法: /character set [@目标] <属性名称> <新值>\n"
+            "例: /character set health 5\n"
+            "例: /character set @玩家 health 5"
+        )
 
     attr_name = parts[0]
     value = parts[1]
@@ -126,18 +133,24 @@ async def _set(
         value_parsed = value
 
     game_id = get_game_id()
-    user_id = await get_dg_user_id(event)
+    sender_user_id = await get_dg_user_id(event)
+    char_owner = target_user_id or sender_user_id
 
     client = get_client()
-    # Get current character's ghost_id first
-    char_data = await client.get_active_character(game_id, user_id)
+    char_data = await client.get_active_character(game_id, char_owner)
     ghost = char_data.get("ghost") or char_data.get("active_ghost") or {}
     ghost_id = ghost.get("ghost_id", ghost.get("id", ""))
     if not ghost_id:
-        await matcher.finish("当前没有活跃的幽灵角色。")
+        if target_user_id:
+            await matcher.finish("目标玩家当前没有活跃的幽灵角色。")
+        else:
+            await matcher.finish("当前没有活跃的幽灵角色。")
 
-    data = await client.set_attribute(game_id, user_id, ghost_id, attr_name, value_parsed)
-    await matcher.finish(f"属性修改成功！{attr_name} → {value_parsed}")
+    data = await client.set_attribute(
+        game_id, sender_user_id, ghost_id, attr_name, value_parsed
+    )
+    target_label = f" ({ghost.get('name', '目标')})" if target_user_id else ""
+    await matcher.finish(f"属性修改成功！{attr_name} → {value_parsed}{target_label}")
 
 
 async def _delete(
@@ -146,18 +159,26 @@ async def _delete(
     args: Message,
     sub_args: str,
 ) -> None:
-    if not sub_args:
-        await matcher.finish("用法: /character delete <角色名称|角色ID>")
+    target_user_id, remaining = await extract_target_from_args(args, sub_args)
+
+    if not remaining:
+        await matcher.finish(
+            "用法: /character delete [@目标] <角色名称|角色ID>\n"
+            "例: /character delete 林墨\n"
+            "例: /character delete @玩家 林墨"
+        )
 
     game_id = get_game_id()
-    user_id = await get_dg_user_id(event)
-    target = sub_args.strip()
+    sender_user_id = await get_dg_user_id(event)
+    char_owner = target_user_id or sender_user_id
+    target = remaining.strip()
 
-    patient_id = await resolve_patient_id(game_id, user_id, target)
+    patient_id = await resolve_patient_id(game_id, char_owner, target)
 
     client = get_client()
-    await client.delete_character(game_id, patient_id, user_id)
-    await matcher.finish(f"角色 {target} 已删除。")
+    await client.delete_character(game_id, patient_id, sender_user_id)
+    target_label = f" ({char_owner})" if target_user_id else ""
+    await matcher.finish(f"角色 {target} 已删除。{target_label}")
 
 
 async def _move(

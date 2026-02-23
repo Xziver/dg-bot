@@ -110,6 +110,58 @@ async def resolve_player_target(args: Message, sub_args: str) -> str | None:
     return target
 
 
+async def extract_target_from_args(
+    args: Message, sub_args: str,
+) -> tuple[str | None, str]:
+    """Extract an optional ``@``-prefixed player target from command args.
+
+    Unlike :func:`resolve_player_target` (which treats *sub_args* as the
+    entire target identifier), this function peels off only the leading
+    ``@target`` token and returns the remaining *sub_args* for further
+    command-specific parsing.
+
+    Resolution order:
+      1. ``@mention`` CQ code in *args* → resolve QQ UID.
+         *sub_args* returned unchanged (``get_plain_args`` already strips
+         mention segments).
+      2. First token of *sub_args* starts with ``@`` and has ≥ 5 digits
+         → treat as QQ号, resolve, strip from *sub_args*.
+      3. First token starts with ``@`` + non-numeric text → return as-is
+         (character name / other identifier), strip from *sub_args*.
+      4. No ``@`` prefix → ``(None, sub_args)``.
+
+    Returns ``(target_user_id_or_name, remaining_sub_args)``.
+    """
+    # 1. @mention (CQ "at" segment)
+    mentioned = get_mentioned_qq_uid(args)
+    if mentioned:
+        try:
+            user_id = await resolve_user(mentioned)
+            return (user_id, sub_args)
+        except NeedRegistration as e:
+            raise NeedRegistration(e.qq_uid, is_target=True) from e
+
+    # 2–3. Text @target as first token
+    parts = sub_args.split(maxsplit=1)
+    if parts and parts[0].startswith("@") and len(parts[0]) > 1:
+        marker = parts[0][1:]  # strip leading @
+        remaining = parts[1] if len(parts) > 1 else ""
+
+        # QQ number
+        if marker.isdigit() and len(marker) >= _QQ_UID_MIN_DIGITS:
+            try:
+                user_id = await resolve_user(marker)
+                return (user_id, remaining)
+            except NeedRegistration as e:
+                raise NeedRegistration(e.qq_uid, is_target=True) from e
+
+        # Character name / other identifier — pass through
+        return (marker, remaining)
+
+    # 4. No target
+    return (None, sub_args)
+
+
 def handle_stale_cache_404(
     e: DgCoreError,
     group_id: str,
