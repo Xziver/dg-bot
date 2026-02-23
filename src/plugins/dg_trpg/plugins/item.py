@@ -127,7 +127,11 @@ async def _grant(
         await matcher.finish("目标玩家没有活跃的患者角色，无法发放道具。")
         return
 
-    await client.grant_item(game_id, user_id, patient_id, item_name, count=count)
+    data = await client.grant_item(game_id, user_id, patient_id, item_name, count=count)
+
+    if not data.get("success", True):
+        await matcher.finish(format_engine_result(data))
+
     count_str = f" x{count}" if count > 1 else ""
     await matcher.finish(f"道具 {item_name}{count_str} 已发放。")
 

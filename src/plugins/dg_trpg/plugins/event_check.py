@@ -70,10 +70,13 @@ async def _set(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> Non
     user_id = await get_dg_user_id(event)
 
     client = get_client()
-    await client.define_event(
+    data = await client.define_event(
         session_id, game_id, name, expression,
         color_restriction=color, user_id=user_id,
     )
+
+    if not data.get("success", True):
+        await matcher.finish(format_engine_result(data))
 
     color_text = f" [限定: {color}]" if color else ""
     await matcher.finish(f"事件设定成功！{name}: {expression}{color_text}")
@@ -147,7 +150,11 @@ async def _delete(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
     if not event_id:
         await matcher.finish(f"未找到名为 '{event_name}' 的事件。")
 
-    await client.delete_event(session_id, event_id, game_id=game_id, user_id=user_id)
+    data = await client.delete_event(session_id, event_id, game_id=game_id, user_id=user_id)
+
+    if not data.get("success", True):
+        await matcher.finish(format_engine_result(data))
+
     await matcher.finish(f"事件 '{event_name}' 已删除。")
 
 

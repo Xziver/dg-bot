@@ -8,7 +8,7 @@ from nonebot.params import CommandArg
 from ..core.api_client import get_client
 from ..core.context import get_dg_user_id, get_game_id, get_plain_args
 from ..core.errors import DgCoreError, format_api_error, format_context_error
-from ..core.formatters import format_buff_list
+from ..core.formatters import format_buff_list, format_engine_result
 
 # ── /buff ──────────────────────────────────────────────────
 
@@ -73,9 +73,12 @@ async def _add(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> Non
     if not ghost_id:
         await matcher.finish("当前没有活跃的幽灵角色。")
 
-    await client.add_buff(
+    data = await client.add_buff(
         game_id, ghost_id, name, expression, rounds=rounds, user_id=user_id
     )
+
+    if not data.get("success", True):
+        await matcher.finish(format_engine_result(data))
 
     rounds_text = "永久" if rounds == -1 else f"{rounds}轮"
     await matcher.finish(f"BUFF添加成功！{name} ({expression}) [{rounds_text}]")
@@ -122,5 +125,9 @@ async def _remove(matcher: Matcher, event: GroupMessageEvent, sub_args: str) -> 
     if not buff_id:
         await matcher.finish(f"未找到名为 '{buff_name}' 的BUFF。")
 
-    await client.remove_buff(game_id, buff_id, user_id=user_id)
+    data = await client.remove_buff(game_id, buff_id, user_id=user_id)
+
+    if not data.get("success", True):
+        await matcher.finish(format_engine_result(data))
+
     await matcher.finish(f"BUFF '{buff_name}' 已移除。")
